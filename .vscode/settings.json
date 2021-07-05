@@ -1,0 +1,14 @@
+{
+    "conventionalCommits.scopes": [
+        "deps",
+        "css",
+        "lp",
+        "sidebar",
+        "bpmn",
+        "config",
+        "instalacao",
+        "resources",
+        "nodes",
+        "docs"
+    ]
+}

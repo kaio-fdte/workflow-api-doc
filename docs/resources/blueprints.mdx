@@ -1,0 +1,247 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+## Introdução
+
+Blueprint é uma palavra de tradução simples, que pode assumir significados diferentes de acordo com o contexto. No nosso contexto, da utilização do FlowBuild para o desenvolvimento de software, podemos entender a blueprint como esquema. Um esquema que representa um processo. O processo desenhado a partir da necessidade de negócio. Este processo pode ter sido desenhado utilizando, por exemplo, a notação BPMN. Assim, a **Blueprint é o artefato que descreve o processo de negócio para o Flowbuild interpretar**, ou seja, é um arquivo do tipo JSON passível de interpretação pelo FlowBuild. 
+
+A Blueprint é responsável por especificar todos os elementos de um processo e orquestrar os canais e serviços.
+
+Na implementação do FlowBuild, implementamos alguns, porém não todos os elementos BMPN. Consulte a seção [BPMN](../documentation/bpmn) para mais detalhes sobre BPMN e a implementação pelo FlowBuild.
+
+Para armazenar uma blueprint, o FlowBuild necessita de 3 informações:
++ name: O nome da blueprint. Apesar de estruturalmente o FlowBuild aceita qualquer texto, é recomendável evitar o uso de espaços e caracteres especiais.
++ description: Uma descrição da blueprint. Esse campo não influencia a execução do processo, mas é importante para identificar o que a blueprint representa.
++ blueprint_spec: o esquema de execução que será utilizado pelo FlowBuild.
+
+:::danger 
+O nome do workflow é case sensitive
+:::
+
+## Blueprint Spec
+
+Uma blueprint é definida por um *objeto* com 6 atributos:
++ prepare
++ requirements
++ enviroment
++ parameters
++ lanes
++ nodes
+
+
+:::note Recomendação
+A visão de negócio orientado a processos sugere que os processos em si documentam o negócio, assim todos os parâmetros de documentação devem ser utilizados para que tenhamos um melhor entendimento das blueprints. Os itens name e description servem muito mais a um olhar humano no que ao Flowbuild Engine.
+:::
+
+> Numa perspectiva de projeto com muitas blueprints, é recomendável que os nomes e descrições sejam de certa forma padronizados, para que todos os profissionais que escrevem blueprints sigam o mesmo racional.
+
+### Prepare
+
+É descrito como a lista de funções que devem ser executadas antes da inicialização do processo.
+
+### Requirements
+
+É descrito coma uma lista de packages que devem ser importados pelo FlowBuild para execução do processo. É uma forma de importar para a blueprint pacotes específicos de execução.
+
+```json title="Exemplo:"
+{
+   "requirements": [
+      "core"
+   ]
+}
+```
+
+### Environment 
+
+O campo enviroment tem por objetivo trazer para a blueprint as variáveis de ambiente da aplicação. É possível definir quantas variáveis forem necessárias.
+
+Essas variáveis são imutáveis e avaliadas no momento da criação do processo.
+
+```json title="Atribui o valor da env API_KEY com o nome X-API-KEY"
+{
+   "environment": {
+      "X-API-KEY": "API_KEY"
+   }
+}
+```
+
+Esses valores podem ser acessados através das notações de [comando](./comandos), usando o namespace *environment*.
+
+### Parameters
+
+Trata-se um objeto onde são definidos constantes aplicadas para aquela determinada blueprint. 
+
+Do ponto de vista do processo, são valores imutáveis (assim como as enviroments), porém são aplicáveis no escopo de uma determinada blueprint e não são influenciadas pelo ambiente da aplicação. Elas são definidas no momento da publicação de blueprint.
+
+```json
+{
+   "parameters": {
+      "value": 10,
+      "name": "fulano"
+   }
+}
+```
+
+:::note EXEMPLO
+O atributo max_step_number. Quando definido nos parameters da blueprint, o FlowBuild não permitirá que aquele processo exceda a quantidade de steps determinada, automaticamente interrompendo o processo caso o limite seja atingido.
+:::
+
+Esses valores podem ser acessados através das notações de [comando](./comandos), usando o namespace *parameters*.
+
+### Lanes
+
+Uma raia é a expressão do controle de acesso a um conjunto de nós. Uma raia define quais regras devem ser atendidas para que o nó seja executado. A rigor as raias definem os atores, ou seja, um conjunto de características. Exemplo: raia Anônimo, qualquer um pode executar os nós.
+
+Na prática a raia é relevante em apenas duas situações: no start e nas tarefas de usuário. O start verifica se as regras da raia estão sendo respeitadas. Os nós do tipo tarefa de usuário devem respeitar a raia que ele pertence, ou seja, para executar deve preencher as regras definidas na raia. Todos os nós devem estar numa raia. No caso dos nós de sistema não faz diferença qual raia ele está. Apesar disso, a representação do diagrama da blueprint ou mesmo seu entendimento em código é facilitado quando organizamos as raias com as devidas regras de quais atores podem executar.
+
+Numa blueprint a lane é definida como um objeto com 3 atributos:
++ id: identificador da raia, é uma string e será referenciados pelos nós da blueprint;
++ name: nome da lane, tem a função de descrição o usuário. Este campo não é utilizado pelo FlowBuild durante a execução do processo;
++ rule: uma função que define quem tem acesso aos nós daquela determinada lane.
+
+A rule, assim como o script da scriptTask, recebe código na sintaxe LISP. Deve ser uma função que retorna true/false dizendo se um dado usuário tem permissão de executar nodes dentro da lane. 
+
+A rule é executada contra o actor data do usuário e sempre avaliada em em tempo de execução.
+
+:::note
+É possível utilizar a notação $js no campo rule, permitindo executar funções javascript se desejado.
+:::
+
+#### Exemplos de Rules de lanes
+<Tabs
+  defaultValue="http"
+  values={[
+    {label: 'Aberta para qualquer usuário', value: 'todos'},
+    {label: 'Vinculada a um usuário específico', value: 'latched'},
+    {label: 'Claim', value: 'claim'},
+  ]
+}>
+<TabItem value="claim">
+Permite acesso se na lista de claims do ator_data há o termo authenticated.
+<p></p>
+
+```js 
+{
+   rule: ['fn', ['actor_data', 'bag'],
+            ['eval', ['apply', 'or', ['map', ['fn', ['v'],
+            ['=', 'v', ['`', 'authenticated']]],
+            ['get', 'actor_data', ['`', 'claims']]]]],
+         ]
+}
+```
+</TabItem>
+<TabItem value="latched">
+Permite acesso ao actor_data cujo actor_id corresponde ao valor contido na bag.vendedor.actor_id
+<p></p>
+
+```js title="Latched Lane"
+{
+   rule: ['fn', ['actor_data', 'bag'],
+   ['=', ['get', ['get', 'bag', ['`', 'vendedor']], ['`', 'actor_id']],
+   ['get', 'actor_data', ['`', 'actor_id']]],
+]
+}
+```
+</TabItem>
+<TabItem value="todos">
+Qualquer actor_data válido pode acessar o conteúdo desta lane.
+<p></p>
+
+```js
+{
+   rule: ["fn", ["&", "args"], true]
+} 
+```
+</TabItem>
+</Tabs>;
+
+
+As Lanes existem para controlar o acesso de usuários ao processo, portanto são usadas para:
+
+● Abrigar StartNodes, portanto controlar quem pode ativar o processo.
+
+● Abrigar UserTasks, portanto controlar quem pode realizar aquela tarefa – seja um
+usuário específico ou um grupo de usuários.
+
+Atualmente não existe controle para distinguir política de acesso (leitura ou ação). Não é
+recomendável criar lanes para representar setores ou simplesmente para agrupar tarefas de
+sistema ou flowNodes.
+
+Lembre-se que as condições da lane dependem de:
+
+● Dados do ator
+
+● Regra da Lane
+
+● Contexto do Processo (quando aplicável) → é importante que o contexto, uma vez
+definido no processo, não seja alterado.
+
+Nomeie lanes usando a CONDIÇÃO. Caso a lane utilize algum parâmetro de contexto do
+processo, utilize o nome do atributo utilizado como condição. Mesmo que um processo possa
+ser executado por qualquer ator, é importante que a raia seja identificada como esta condição,
+um ator anônimo.
+
+Em um projeto em que mais de um processo se relacionam é aconselhável que as raias de um
+mesmo ator utilizem o mesmo nome e a mesma definição. Assim facilitamos o entendimento e
+diminuímos a possibilidade de inconsistências no todo.
+
+**precisamos incluir a explicação de claims**
+
+### Nós ou Nodes
+
+Um nó é a menor unidade do processo, é uma tarefa que deve ser executada. 
+
+Toda vez que um nó executado ele gera um novo estado, que é gerado e salvo **ao término** da execução do nó.
+
+Existem vários tipos de nós, que estão descritos em maiores detalhes das seção nós dessa documentação.
+
+Numa blueprint o atributo nodes é descrito como uma lista de nós que, por sua vez, é descrito como um objeto com os seguintes atributos:
++ **id**: definido como uma string, é o identificador do nó e deve ser único no contexto da blueprint;
++ **name**: nome do nó, tem uma função descritiva para o usuário que lê a blueprint. Não afeta a execução do processo, porém detém muito valor para análise futura e rastreamento;
++ **lane_id**: Uma string que faz referência ao id de umas das lanes da blueprint. Uma falha na referência impede a blueprint de ser publicada.
++ **next**: indica qual o próximo nó será executado após a execução do nó atual. Deve fazer referência a um nó da própria blueprint. A inexistência de referência impede a blueprint de ser publicada.
++ **type**: define o tipo de tarefa que deverá ser realizada. Veja a seção de nodeTypes para mais detalhes.
++ **category**: atributo exclusivo para systemTaskNodes.
++ **parameters**: é definido por um objeto com os parâmetros de execução do nó e dados de input (quando aplicável).
+
+## IDs e Names
+
+No FlowBuild, cada nó do fluxo tem um atributo name e um id. O atributo name não é utilizado
+em nenhum momento pelo motor de execução. Sua função é trazer entendimento para o
+público de negócio e para o designer. O id, por sua vez, é utilizado pelo motor de execução para
+identificar a sequência de tarefas. Isso não impede, contudo, que este campo não possa
+também ser utilizado para facilitar o designer no entendimento do fluxo de negócio.
+
+A única restrição do ponto de vista do motor de execução é que o campo id seja único no fluxo
+(condição que atualmente é validada pelo FlowBuild no momento da criação do fluxo). Fora
+isso, é permitido utilizar qualquer tipo de texto neste campo.
+
+É recomendado utilizar termos curtos no campo de id e, o uso de uma codificação é uma boa
+prática. Abaixo estão apresentadas algumas codificações utilizadas, com seus prós e contras.
+
+
+Toda vez que um nó termina ele coloca as informações no result, para que tres nós a frente
+consiga usar é só colocar na bag.
+
+## Eventos (Start e Finish)
+
+StartNodes e FinishNodes são os dois tipos de eventos existentes no FlowBuild para iniciar e
+finalizar um processo. A recomendação para os nomes desses nodes é que reflitam o objetivo
+do processo. Assim estes eventos podem ser nomeados usando o modelo ENTIDADE +
+STATUS, onde:
+
+    ● StartNodes é nomedo em função das condições de ativação do processo.
+
+    ● FinishNodes é nomeado em função da condição de saída do processo.
+
+o Caso o processo tenha estados finais alternativos, crie um finishNode para cada estado.
+
+o Caso o processo tenha estados finais alternativos, crie um finishNode para cada estado.
+
+Exemplos:
+
+● Usuário Cadastrado
+
+● Contrato Criado
+
+● Senha atualizada

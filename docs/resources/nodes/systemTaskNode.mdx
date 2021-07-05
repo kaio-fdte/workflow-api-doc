@@ -1,0 +1,175 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+Nó de sistema. 
+
+Ele é base para todos os tipos de nodes de tarefas síncronas orquestradas pelo flowBuild.
+
+O systemTaskNode espera um atributo adicional que descreve a categoria da tarefa a ser realizada, entre elas:
++ HTTP
++ SetToBag
++ Timer
+
+## Categorias
+
+### HTTP
+
+System Task que realiza uma chamada HTTP.
+
+#### Parâmetros
+
++ input: os dados que serão enviados no corpo da requisição.
++ request: um objeto contendo os atributos da requisição
++ valid_response_codes: uma lista de códigos de resposta aceitos como válidos para a requisição
+
+
+| Atributo | Obrigatório | Descrição | Valor Padrão |
+| ---- | ---------- | ----------- | ---- |
+| url | sim | endpoint da requisição | N/A |
+| verb | sim | o verbo da requisição (POST, GET, PUT, PATCH, DELETE, HEAD) | N/A |
+| headers | não | um objeto com o conjunto de headers a serem incluídos na requisição | N/A |
+| timeout | não | um inteiro (em milisegudos) do tempo que de espera até que a requisição expire. | 60000 |
+| max_content_length | não | o comprimento máximo, em bytes da resposta da requisição. | 2000 |
+
+> O valor padrão de timeout pode ser definido através da variável de ambiente HTTP_TIMEOUT
+
+> O valor padrão do comprimento máximo da resposta poder ser definido através da variável de ambiente MAX_CONTENT_LENGTH
+
+
+### SetToBag
+
+Nó de persistência do processo. Este nó é utilizado para para incluir ou remover dados a bag do processo.
+
+O nó de setToBag transfere o result por ele recebido para seu nó subsequente.
+
+#### Parâmetros
+
+Este tipo de nó espera um input nos campo parâmetros que determina os atributos da bag que devem ser modificados.
+
+Os atributos mencionados nos input do nó serão completamente sobrescritos pelos valores informados.
+
+### Timer
+
+O nó de timer é utilizado para pausar o processo por um período determinado.
+
+O processo entra no status *PENDING* até que o prazo de expiração seja atingido.
+
+#### Parâmetros
+
+Este nó espera um atributo *timeout* que descreve o valor, em segundos, até que o processo seja retomado.
+
+> Apesar de não ser utilizado para execução, o timerNode necessita de um atributo input.
+
+### StartProcess
+
+Esta categoria de nó é utilizada que um processo inicie a execução de outro processo.
+
+O processo criado por esse nó não tem qualquer vínculo com o processo que o criou, criando trilhas de execução independentes.
+
+A criação do processo passará pelo mesmo critério de validação de acesso do startNode que seria feito para iniciar um processo via API. Este nó só evita a necessidade da aplicação sair para a camada HTTP para criar um processo.
+
+#### Parâmetros
+
+O nó de startProcess espera 3 parâmetros:
++ workflow_name: o nome do workflow cujo processo deve ser criado
++ input: dados enviados para iniciar o processo
++ actor_data: o actor_data que deve ser utilizado para criação do processo
+
+## Exemplos
+
+<Tabs
+  defaultValue="http"
+  values={[
+    {label: 'HTTP', value: 'http'},
+    {label: 'Set To Bag', value: 'settobag'},
+    {label: 'Timer', value: 'timer'},
+    {label: 'Start Process', value: 'startprocess'},
+  ]
+}>
+<TabItem value="http">
+
+```json
+{
+   "id":"2",
+   "name":"get users",
+   "next":"3",
+   "lane_id":"1",
+   "type":"SystemTask",
+   "category":"http",
+   "parameters":{
+      "input":{},
+      "request":{
+         "url":"https://someapi.mock.com.br/v1/users",
+         "verb":"GET",
+         "headers":{
+            "ContentType":"application/json"
+         },
+         "timeout": 30000,
+         "max_content_length": 5000,
+      }
+      "valid_response_codes": [200,201,202,206]
+   }
+}
+```
+</TabItem>
+<TabItem value="settobag">
+
+```json
+{
+   "id":"8",
+   "name":"bag register response",
+   "next":"9",
+   "type":"SystemTask",
+   "category":"setToBag",
+   "lane_id":"1",
+   "parameters":{
+      "input":{
+         "registerUserResponse":{
+            "$ref":"result"
+         }
+      }
+   }
+}
+```
+</TabItem>
+<TabItem value="timer">
+
+```json
+{
+   "id":"6",
+   "type":"SystemTask",
+   "category":"timer",
+   "name":"Timer node",
+   "parameters":{
+      "input":{
+         
+      },
+      "timeout":60
+   },
+   "next":"4",
+   "lane_id":"1"
+},
+  
+```
+</TabItem>
+<TabItem value="startprocess">
+
+``` json
+{
+    "id": "2",
+    "type": "SystemTask",
+    "category": "startProcess",
+    "name": "start minimal",
+    "parameters": {
+        "workflow_name": "minimal",
+        "input": {},
+        "actor_data": { $ref: "actor_data" },
+    },
+    "next": "99",
+    "lane_id": "1"
+}
+```
+</TabItem>
+</Tabs>;
+
+
