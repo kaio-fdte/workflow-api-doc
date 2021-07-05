@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://kaio-ftde.github.io./workflow-api-doc/blog</id>
+    <title>FlowBuild Blog</title>
+    <updated>2021-07-05T18:58:41.516Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://kaio-ftde.github.io./workflow-api-doc/blog"/>
+    <subtitle>FlowBuild Blog</subtitle>
+    <icon>https://kaio-ftde.github.io./workflow-api-doc/img/favicon.ico</icon>
+    <entry>
+        <title type="html"><![CDATA[Tutorial Intro]]></title>
+        <id>Tutorial Intro</id>
+        <link href="https://kaio-ftde.github.io./workflow-api-doc/blog/intro"/>
+        <updated>2021-07-05T18:58:41.516Z</updated>
+        <summary type="html"><![CDATA[Let's discover Docusaurus in less than 5 minutes.]]></summary>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Welcome]]></title>
+        <id>welcome</id>
+        <link href="https://kaio-ftde.github.io./workflow-api-doc/blog/welcome"/>
+        <updated>2019-05-30T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[Blog features are powered by the blog plugin. Simply add files to the blog directory. It supports tags as well!]]></summary>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Hello]]></title>
+        <id>hello-world</id>
+        <link href="https://kaio-ftde.github.io./workflow-api-doc/blog/hello-world"/>
+        <updated>2019-05-29T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[Welcome to this blog. This blog is created with Docusaurus 2.]]></summary>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Hola]]></title>
+        <id>hola</id>
+        <link href="https://kaio-ftde.github.io./workflow-api-doc/blog/hola"/>
+        <updated>2019-05-28T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet]]></summary>
+    </entry>
+</feed>

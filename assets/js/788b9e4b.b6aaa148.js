@@ -1,0 +1,1 @@
+(self.webpackChunkworkflow=self.webpackChunkworkflow||[]).push([[7970],{8935:function(o){"use strict";o.exports=JSON.parse('{"allTagsPath":"/workflow-api-doc/blog/tags","slug":"hola","name":"hola","count":1,"permalink":"/workflow-api-doc/blog/tags/hola"}')}}]);
