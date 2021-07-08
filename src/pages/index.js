@@ -17,7 +17,7 @@ function HomepageHeader() {
           <Link
             className="button button--secondary button--lg"
             to="/docs/intro">
-            Teste para o Gustavo AO VIVO! - 5min ⏱️
+            Teste para o Gustavo 08072021 - 1230 - 5min ⏱️
           </Link>
         </div>
       </div>
