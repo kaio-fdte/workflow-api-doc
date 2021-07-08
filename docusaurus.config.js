@@ -10,7 +10,7 @@ module.exports = {
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
-  organizationName: 'kaio-ftde', // Usually your GitHub org/user name.
+  organizationName: 'kaio-fdte', // Usually your GitHub org/user name.
   projectName: 'workflow-api-doc', // Usually your repo name.
   trailingSlash: false,
   themeConfig: {
